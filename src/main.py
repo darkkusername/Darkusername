@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException\nfrom fastapi.staticfiles import StaticFiles
 from .schemas import Opportunity, UnitEconomics
 from .orchestrator import VentureOrchestrator
 from .security import require_api_key
@@ -8,10 +8,10 @@ from .memory_store import init_memory, put, get, list_namespace
 from .content_factory import ContentFactory
 from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
-from .integrations import statuses
+from .integrations import statuses\nfrom .ops import system_status\nimport os, httpx
 from .db import init_db, save_trends, save_run, recent_trends, recent_runs
-app=FastAPI(title="DU-cluster",version="2.1.0",description="International English-first AI Business Operating System")
-orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()
+app=FastAPI(title="DU-cluster",version="2.2.0",description="International English-first AI Business Operating System")
+orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()\napp.mount("/web", StaticFiles(directory="web"), name="web")
 @app.get("/health")
 def health(): return {"status":"ok","service":"DU-cluster","version":"2.1.0"}
 @app.get("/ready")
@@ -25,6 +25,21 @@ def analyze_trends(payload:dict):
     items=payload.get("signals",[])
     if not isinstance(items,list): raise HTTPException(400,"signals must be an array")
     result=analyze(items); save_trends(result); return {"market":"international","language":"en","signals":result}
+@app.post("/api/v1/trends/ingest",dependencies=[Depends(require_api_key)])
+def trends_ingest():
+    key=os.getenv("SERPAPI_KEY","").strip()
+    if not key: raise HTTPException(503,"SERPAPI_KEY is not configured")
+    params={"engine":"google_trends_trending_now","geo":os.getenv("TREND_GEO","US"),"hl":"en","hours":24,"api_key":key}
+    r=httpx.get("https://serpapi.com/search.json",params=params,timeout=45)
+    r.raise_for_status(); data=r.json()
+    raw=data.get("trending_searches",data.get("trending_searches_results",[]))
+    signals=[]
+    for x in raw:
+        if isinstance(x,dict):
+            q=x.get("query") or x.get("title")
+            if q: signals.append({"topic":q,"recency_signal":90,"why_now":"Fresh international English-language trending signal."})
+    result=analyze(signals); save_trends(result)
+    return {"market":"international","language":"en","geo":params["geo"],"count":len(result),"signals":result}
 @app.get("/api/v1/trends/recent",dependencies=[Depends(require_api_key)])
 def trends_recent(): return {"signals":recent_trends()}
 @app.post("/api/v1/agent/execute",dependencies=[Depends(require_api_key)])
