@@ -9,7 +9,7 @@ from .content_factory import ContentFactory
 from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
 from .integrations import statuses\nfrom .ops import system_status\nimport os, httpx
-from .db import init_db, save_trends, save_run, recent_trends, recent_runs
+from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save_performance_event, recent_performance
 app=FastAPI(title="DU-cluster",version="2.2.0",description="International English-first AI Business Operating System")
 orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()\napp.mount("/web", StaticFiles(directory="web"), name="web")
 @app.get("/health")
@@ -77,6 +77,24 @@ def generate_content(payload:dict):
     topic=str(payload.get("topic","")).strip()
     if not topic: raise HTTPException(400,"topic is required")
     return content_factory.generate(topic,str(payload.get("offer","")))
+
+@app.post("/api/v1/analytics/event",dependencies=[Depends(require_api_key)])
+def analytics_event(payload:dict):
+    platform=str(payload.get("platform","")).strip()
+    content_id=str(payload.get("content_id","")).strip()
+    metric=str(payload.get("metric","")).strip()
+    if not platform or not content_id or not metric:
+        raise HTTPException(400,"platform, content_id and metric are required")
+    try:
+        value=float(payload.get("value"))
+    except (TypeError,ValueError):
+        raise HTTPException(400,"value must be numeric")
+    save_performance_event(platform,content_id,metric,value,payload)
+    return {"status":"recorded","platform":platform,"content_id":content_id,"metric":metric,"value":value}
+
+@app.get("/api/v1/analytics/recent",dependencies=[Depends(require_api_key)])
+def analytics_recent(limit:int=100):
+    return {"events":recent_performance(min(max(limit,1),500))}
 
 @app.get("/api/v1/integrations/status",dependencies=[Depends(require_api_key)])
 def integration_status():
