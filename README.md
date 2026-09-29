@@ -21,3 +21,10 @@ Production: use docker-compose.prod.yml, a secret manager, HTTPS, PostgreSQL, Re
 Business objective: $1,000,000/month is a long-term business objective, not a guarantee.
 
 Truthfulness and safety: DU-cluster does not fabricate trend metrics, sales, publishing results or provider actions. It does not manufacture engagement or use deceptive clickbait. Cybersecurity workflows must remain defensive and authorized.
+
+
+## Runtime status
+
+DU-cluster is implemented as a standalone FastAPI control plane with specialized agents, persistent SQLite state, international English-first trend rules, product/content generation, analytics aggregation, and integration adapters.
+
+The runtime fails closed when an AI provider is not configured; it does not pretend that external publishing, sales, or AI actions occurred. Configure provider credentials and the required integration credentials in the deployment environment before enabling autonomous execution.
