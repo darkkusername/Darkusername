@@ -45,3 +45,26 @@ def performance_summary(limit=500):
                     "observations":len(vals),"latest":vals[0],"average":round(sum(vals)/len(vals),4),
                     "min":min(vals),"max":max(vals)})
     return out
+
+
+def save_agent_memory(namespace: str, key: str, value: object):
+    import json
+    with connect() as conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS agent_memory (
+            namespace TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY(namespace, key)
+        )""")
+        conn.execute("""INSERT INTO agent_memory(namespace,key,value,updated_at)
+            VALUES(?,?,?,datetime('now'))
+            ON CONFLICT(namespace,key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at""",
+            (namespace, key, json.dumps(value)))
+        conn.commit()
+
+def get_agent_memory(namespace: str, key: str):
+    import json
+    with connect() as conn:
+        row=conn.execute("SELECT value FROM agent_memory WHERE namespace=? AND key=?", (namespace,key)).fetchone()
+    return json.loads(row[0]) if row else None
