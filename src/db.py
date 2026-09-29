@@ -30,3 +30,18 @@ def save_performance_event(platform:str,content_id:str,metric:str,value:float,pa
 def recent_performance(limit=100):
     with connect() as c:
         return [dict(r) for r in c.execute("SELECT * FROM performance_events ORDER BY id DESC LIMIT ?",(limit,))]
+
+def performance_summary(limit=500):
+    rows=recent_performance(limit)
+    groups={}
+    for r in rows:
+        key=(r["platform"],r["content_id"],r["metric"])
+        g=groups.setdefault(key,{"platform":r["platform"],"content_id":r["content_id"],"metric":r["metric"],"values":[]})
+        g["values"].append(float(r["value"]))
+    out=[]
+    for g in groups.values():
+        vals=g["values"]
+        out.append({**{k:g[k] for k in ("platform","content_id","metric")},
+                    "observations":len(vals),"latest":vals[0],"average":round(sum(vals)/len(vals),4),
+                    "min":min(vals),"max":max(vals)})
+    return out
