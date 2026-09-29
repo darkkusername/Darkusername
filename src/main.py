@@ -9,7 +9,7 @@ from .content_factory import ContentFactory
 from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
 from .integrations import statuses\nfrom .ops import system_status\nimport os, httpx
-from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save_performance_event, recent_performance
+from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save_performance_event, recent_performance, performance_summary
 app=FastAPI(title="DU-cluster",version="2.2.0",description="International English-first AI Business Operating System")
 orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()\napp.mount("/web", StaticFiles(directory="web"), name="web")
 @app.get("/health")
@@ -95,6 +95,20 @@ def analytics_event(payload:dict):
 @app.get("/api/v1/analytics/recent",dependencies=[Depends(require_api_key)])
 def analytics_recent(limit:int=100):
     return {"events":recent_performance(min(max(limit,1),500))}
+
+@app.get("/api/v1/analytics/summary",dependencies=[Depends(require_api_key)])
+def analytics_summary(limit:int=500):
+    return {"source":"measured_performance_events","summary":performance_summary(min(max(limit,1),2000))}
+
+@app.post("/api/v1/optimizer/run",dependencies=[Depends(require_api_key)])
+def optimizer_run(payload:dict):
+    from .agents_v2 import AgentRuntime
+    runtime=AgentRuntime()
+    summary=performance_summary(500)
+    task=str(payload.get("task","Optimize content and product performance using the measured KPI summary.")).strip()
+    context={"measured_kpis":summary,"rule":"Use only measured data; clearly label hypotheses and do not invent missing metrics."}
+    result=runtime.execute("Analyze KPI evidence, identify measurable experiments and next actions.",context)
+    return {"optimizer":"Optimizer","status":result["status"],"task":task,"evidence":summary,"result":result}
 
 @app.get("/api/v1/integrations/status",dependencies=[Depends(require_api_key)])
 def integration_status():
