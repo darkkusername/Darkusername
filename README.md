@@ -1,24 +1,45 @@
-# AI Venture Factory
+# DU-cluster
 
-Autonomous digital-product venture operating system for the Dark Username project.
+**The Dark Username Company — AI Business Operating System**
 
-Mission: market signal -> validated product -> distribution -> sales -> analytics -> optimization.
+DU-cluster is a standalone control plane for an international, English-first digital-products business. It replaces the abandoned Make prototype with application code and explicit APIs.
 
-V1 principles:
-- Human-controlled financial, production, legal and publication gates.
-- Provider-agnostic LLM layer.
-- Make-compatible webhooks.
-- GitHub-first product artifacts.
-- No artificial engagement or platform manipulation.
-- Every experiment has a budget, success metric and kill condition.
+## Core loop
+Global trend intelligence → opportunity scoring → product factory → content factory → publishing → Shopify sales → analytics → optimization.
 
-Quick start:
-1. Copy .env.example to .env.
-2. Install Python 3.11+.
-3. pip install -r requirements.txt
-4. python -m src.main
-5. Run python -m src.demo for a deterministic decision example.
+## Market
+- International / English-first.
+- Algeria is explicitly excluded as a viral/trend criterion.
+- Primary opportunity domains: AI, technology, Linux, cybersecurity, automation, software, SaaS, creator tools, productivity and digital products.
 
-Repository structure: src/ contains the control plane, agents, scoring, memory and policy; prompts/ contains agent system prompts; docs/ contains architecture; tests/ contains deterministic tests.
+## Integrations
+Metricool, Shopify and Canva can be connected through provider APIs. Credentials are never hard-coded and actions are only marked complete after provider confirmation.
 
-Production deployment still requires external credentials, hosting and payment/social integrations; those are deliberately not hard-coded.
+## Run
+```bash
+cp .env.example .env
+pip install -r requirements.txt
+uvicorn src.main:app --reload
+```
+
+Open `web/index.html` for the dashboard concept or serve it with any static web server.
+
+## Docker
+```bash
+docker compose up --build
+```
+
+## API
+- GET /health
+- GET /ready
+- GET /api/v1/agent/status
+- GET /api/v1/dashboard
+- POST /api/v1/trends/analyze
+- POST /api/v1/opportunities/evaluate
+- POST /api/v1/agent/execute
+
+## Business objective
+The system is designed around a long-term **$1,000,000/month revenue objective**. This is a target, not a guaranteed result.
+
+## Status
+The repository contains the standalone v2 foundation, trend scoring engine, API control plane, dashboard, Docker runtime and architecture documentation. External production deployment and third-party credentials remain environment-dependent.
