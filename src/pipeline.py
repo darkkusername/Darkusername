@@ -20,7 +20,7 @@ class BusinessPipeline:
         previous={}
         for name,agent,instruction in STAGES:
             stage_context={**context,"previous_stage":previous,"pipeline_stage":name}
-            r=self.runtime.execute(f"{instruction}\nUser task: {task}",stage_context)
+            r=self.runtime.execute(f"{instruction}\nUser task: {task}",stage_context,agent=agent)
             item={"stage":name,"agent":agent,**r}
             results.append(item)
             previous=item.get("result",{})
