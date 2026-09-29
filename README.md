@@ -1,45 +1,19 @@
 # DU-cluster
 
-**The Dark Username Company — AI Business Operating System**
+The Dark Username Company — AI Business Operating System.
 
-DU-cluster is a standalone control plane for an international, English-first digital-products business. It replaces the abandoned Make prototype with application code and explicit APIs.
+Standalone international, English-first control plane for digital products.
 
-## Core loop
-Global trend intelligence → opportunity scoring → product factory → content factory → publishing → Shopify sales → analytics → optimization.
+Core loop: global trend intelligence -> opportunity scoring -> product factory -> content factory -> publishing -> Shopify sales -> analytics -> optimization.
 
-## Market
-- International / English-first.
-- Algeria is explicitly excluded as a viral/trend criterion.
-- Primary opportunity domains: AI, technology, Linux, cybersecurity, automation, software, SaaS, creator tools, productivity and digital products.
+Market: International / English-first. Algeria is excluded as a viral/trend criterion. Focus: AI, technology, Linux, cybersecurity, automation, software, SaaS, creator tools, productivity and digital products.
 
-## Integrations
-Metricool, Shopify and Canva can be connected through provider APIs. Credentials are never hard-coded and actions are only marked complete after provider confirmation.
+Runtime: Python 3.11+, FastAPI, SQLite development persistence, Docker-ready. The persistence layer is isolated so production can move to PostgreSQL without changing the API contract.
 
-## Run
-```bash
-cp .env.example .env
-pip install -r requirements.txt
-uvicorn src.main:app --reload
-```
+API: /health, /ready, /api/v1/agent/status, /api/v1/dashboard, /api/v1/trends/analyze, /api/v1/trends/recent, /api/v1/opportunities/evaluate, /api/v1/agent/execute, /api/v1/agent/runs.
 
-Open `web/index.html` for the dashboard concept or serve it with any static web server.
+Integrations: Metricool, Shopify and Canva. Credentials are never hard-coded and actions are only marked complete after provider confirmation.
 
-## Docker
-```bash
-docker compose up --build
-```
+Business objective: $1,000,000/month is a long-term target, not a guarantee.
 
-## API
-- GET /health
-- GET /ready
-- GET /api/v1/agent/status
-- GET /api/v1/dashboard
-- POST /api/v1/trends/analyze
-- POST /api/v1/opportunities/evaluate
-- POST /api/v1/agent/execute
-
-## Business objective
-The system is designed around a long-term **$1,000,000/month revenue objective**. This is a target, not a guaranteed result.
-
-## Status
-The repository contains the standalone v2 foundation, trend scoring engine, API control plane, dashboard, Docker runtime and architecture documentation. External production deployment and third-party credentials remain environment-dependent.
+Status: DU-cluster v2.1 foundation includes API control plane, international trend scoring, persistent local state, dashboard, Docker runtime, tests and integration contracts. Production hosting and third-party API execution remain environment-dependent.
