@@ -67,6 +67,26 @@ def score_signal(item: dict[str, Any]) -> TrendSignal | None:
         next_action=f"Validate demand and create one English-first content test for {topic} within 24 hours."
     )
 
+def normalize_topic(topic: str) -> str:
+    topic = re.sub(r"\\s+", " ", topic.lower()).strip()
+    return re.sub(r"[^a-z0-9+#. -]", "", topic)
+
+def deduplicate(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    groups: dict[str, dict[str, Any]] = {}
+    for item in items:
+        topic = str(item.get("topic") or item.get("query") or "").strip()
+        key = normalize_topic(topic)
+        if not key:
+            continue
+        current = groups.get(key)
+        if current is None or float(item.get("recency_signal", 0)) > float(current.get("recency_signal", 0)):
+            groups[key] = {**item, "topic": topic}
+    return list(groups.values())
+
 def analyze(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    out = [score_signal(x) for x in items]
-    return [asdict(x) for x in out if x]
+    scored = [score_signal(x) for x in deduplicate(items)]
+    result = [asdict(x) for x in scored if x]
+    return sorted(result, key=lambda x: x["opportunity_score"], reverse=True)
+
+def top_opportunities(items: list[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
+    return analyze(items)[:max(1, limit)]
