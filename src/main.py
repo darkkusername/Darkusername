@@ -46,8 +46,13 @@ def trends_recent(): return {"signals":recent_trends()}
 def execute(payload:dict):
     task=str(payload.get("task","")).strip()
     if not task: raise HTTPException(400,"task is required")
-    result={"status":"accepted","task":task,"next":"Route through specialized agents and require provider confirmation before external actions."}
-    save_run(task,"accepted",result); return result
+    context=payload.get("context") or {}
+    run_id=f"run-{os.urandom(6).hex()}"
+    result=pipeline.run(task,context)
+    status="completed" if result["results"] and result["results"][-1]["status"]=="completed" else "provider_not_configured"
+    put("runs",run_id,{"task":task,"status":status,"results":result["results"]})
+    save_run(task,status,result)
+    return {"run_id":run_id,"status":status,"task":task,"results":result["results"]}
 @app.post("/api/v1/pipeline/run",dependencies=[Depends(require_api_key)])
 def pipeline_run(payload:dict):
     task=str(payload.get("task","")).strip()
