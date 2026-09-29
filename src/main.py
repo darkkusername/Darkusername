@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException\nfrom fastapi.staticfiles im
 from .schemas import Opportunity, UnitEconomics
 from .orchestrator import VentureOrchestrator
 from .security import require_api_key
-from .trends import analyze
+from .trends import analyze, top_opportunities
 from .pipeline import BusinessPipeline
 from .memory_store import init_memory, put, get, list_namespace
 from .content_factory import ContentFactory
@@ -42,6 +42,12 @@ def trends_ingest():
     return {"market":"international","language":"en","geo":params["geo"],"count":len(result),"signals":result}
 @app.get("/api/v1/trends/recent",dependencies=[Depends(require_api_key)])
 def trends_recent(): return {"signals":recent_trends()}
+@app.get("/api/v1/trends/opportunities",dependencies=[Depends(require_api_key)])
+def trend_opportunities(limit:int=10):
+    import json
+    rows=recent_trends(max(10,limit*5))
+    items=[json.loads(r["payload"]) for r in rows]
+    return {"market":"international","language":"en","opportunities":top_opportunities(items,limit)}
 @app.post("/api/v1/agent/execute",dependencies=[Depends(require_api_key)])
 def execute(payload:dict):
     task=str(payload.get("task","")).strip()
