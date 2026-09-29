@@ -13,7 +13,7 @@ from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save
 app=FastAPI(title="DU-cluster",version="2.2.0",description="International English-first AI Business Operating System")
 orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()\napp.mount("/web", StaticFiles(directory="web"), name="web")
 @app.get("/health")
-def health(): return {"status":"ok","service":"DU-cluster","version":"2.1.0"}
+def health(): return {"status":"ok","service":"DU-cluster","version":"2.2.0"}
 @app.get("/ready")
 def ready(): return {"status":"ready","service":"DU-cluster","mode":"standalone","storage":"sqlite"}
 @app.get("/api/v1/agent/status")
@@ -107,7 +107,7 @@ def optimizer_run(payload:dict):
     summary=performance_summary(500)
     task=str(payload.get("task","Optimize content and product performance using the measured KPI summary.")).strip()
     context={"measured_kpis":summary,"rule":"Use only measured data; clearly label hypotheses and do not invent missing metrics."}
-    result=runtime.execute("Analyze KPI evidence, identify measurable experiments and next actions.",context)
+    result=runtime.execute("Analyze KPI evidence, identify measurable experiments and next actions.",context,agent="Optimizer")
     return {"optimizer":"Optimizer","status":result["status"],"task":task,"evidence":summary,"result":result}
 
 @app.get("/api/v1/integrations/status",dependencies=[Depends(require_api_key)])
