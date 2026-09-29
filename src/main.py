@@ -4,9 +4,14 @@ from .orchestrator import VentureOrchestrator
 from .security import require_api_key
 from .trends import analyze
 from .pipeline import BusinessPipeline
+from .memory_store import init_memory, put, get, list_namespace
+from .content_factory import ContentFactory
+from .product_factory import ProductFactory
+from .ai_gateway import AIGateway
+from .integrations import statuses
 from .db import init_db, save_trends, save_run, recent_trends, recent_runs
 app=FastAPI(title="DU-cluster",version="2.1.0",description="International English-first AI Business Operating System")
-orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); init_db()
+orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()
 @app.get("/health")
 def health(): return {"status":"ok","service":"DU-cluster","version":"2.1.0"}
 @app.get("/ready")
@@ -35,6 +40,31 @@ def pipeline_run(payload:dict):
     result=pipeline.run(task,payload.get("context") or {})
     save_run(task,result["results"][-1]["status"],result)
     return result
+@app.post("/api/v1/products/generate",dependencies=[Depends(require_api_key)])
+def generate_product(payload:dict):
+    topic=str(payload.get("topic","")).strip()
+    if not topic: raise HTTPException(400,"topic is required")
+    return product_factory.generate(topic,str(payload.get("audience","")))
+
+@app.post("/api/v1/content/generate",dependencies=[Depends(require_api_key)])
+def generate_content(payload:dict):
+    topic=str(payload.get("topic","")).strip()
+    if not topic: raise HTTPException(400,"topic is required")
+    return content_factory.generate(topic,str(payload.get("offer","")))
+
+@app.get("/api/v1/integrations/status",dependencies=[Depends(require_api_key)])
+def integration_status():
+    return {"integrations":[s.__dict__ for s in statuses()]}
+
+@app.put("/api/v1/memory/{namespace}/{key}",dependencies=[Depends(require_api_key)])
+def memory_put(namespace:str,key:str,payload:dict):
+    put(namespace,key,payload)
+    return {"status":"saved","namespace":namespace,"key":key}
+
+@app.get("/api/v1/memory/{namespace}",dependencies=[Depends(require_api_key)])
+def memory_list(namespace:str):
+    return {"namespace":namespace,"items":list_namespace(namespace)}
+
 @app.get("/api/v1/agent/runs",dependencies=[Depends(require_api_key)])
 def agent_runs(): return {"runs":recent_runs()}
 @app.get("/api/v1/dashboard")
