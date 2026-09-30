@@ -8,7 +8,8 @@ from .memory_store import init_memory, put, get, list_namespace
 from .content_factory import ContentFactory
 from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
-from .integrations import statuses\nfrom .ops import system_status\nimport os, httpx
+from .integrations import statuses\nfrom .ops import system_status
+from .publishing import schedule_content\nimport os, httpx
 from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save_performance_event, recent_performance, performance_summary
 app=FastAPI(title="DU-cluster",version="2.2.0",description="International English-first AI Business Operating System")
 orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()\napp.mount("/web", StaticFiles(directory="web"), name="web")
@@ -125,5 +126,13 @@ def memory_list(namespace:str):
 
 @app.get("/api/v1/agent/runs",dependencies=[Depends(require_api_key)])
 def agent_runs(): return {"runs":recent_runs()}
+
+@app.post("/api/v1/publishing/schedule",dependencies=[Depends(require_api_key)])
+def publishing_schedule(payload:dict):
+    result=schedule_content(payload)
+    if result.get("status")=="invalid":
+        raise HTTPException(400, result.get("error","invalid publishing payload"))
+    return result
+
 @app.get("/api/v1/dashboard")
 def dashboard(): return {"brand":"DU-cluster","target":"$1M/month business objective","market":"International","language":"English","kpis":["traffic","leads","conversion","AOV","repeat_purchase"],"integrations":["Metricool","Shopify","Canva"],"automation":"standalone; Make removed"}
