@@ -10,7 +10,7 @@ from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
 from .integrations import statuses\nfrom .ops import system_status
 from .publishing import schedule_content\nimport os, httpx
-from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save_performance_event, recent_performance, performance_summary
+from .db import init_db, save_trends, save_run, recent_trends, recent_runs, save_performance_event, recent_performance, performance_summary, save_business_record, recent_business_records
 app=FastAPI(title="DU-cluster",version="2.2.0",description="International English-first AI Business Operating System")
 orchestrator=VentureOrchestrator(); pipeline=BusinessPipeline(); ai=AIGateway(); content_factory=ContentFactory(ai); product_factory=ProductFactory(ai); init_db(); init_memory()\napp.mount("/web", StaticFiles(directory="web"), name="web")
 @app.get("/health")
@@ -71,13 +71,26 @@ def pipeline_run(payload:dict):
 def generate_product(payload:dict):
     topic=str(payload.get("topic","")).strip()
     if not topic: raise HTTPException(400,"topic is required")
-    return product_factory.generate(topic,str(payload.get("audience","")))
+    result=product_factory.generate(topic,str(payload.get("audience","")))
+    record=save_business_record("products",{"topic":topic,"audience":str(payload.get("audience","")),"result":result})
+    return {"record":record,"generation":result}
 
 @app.post("/api/v1/content/generate",dependencies=[Depends(require_api_key)])
 def generate_content(payload:dict):
     topic=str(payload.get("topic","")).strip()
     if not topic: raise HTTPException(400,"topic is required")
-    return content_factory.generate(topic,str(payload.get("offer","")))
+    result=content_factory.generate(topic,str(payload.get("offer","")))
+    record=save_business_record("content_assets",{"topic":topic,"offer":str(payload.get("offer","")),"result":result})
+    return {"record":record,"generation":result}
+
+
+@app.get("/api/v1/products/recent",dependencies=[Depends(require_api_key)])
+def products_recent(limit:int=50):
+    return {"items":recent_business_records("products",limit)}
+
+@app.get("/api/v1/content/recent",dependencies=[Depends(require_api_key)])
+def content_recent(limit:int=50):
+    return {"items":recent_business_records("content_assets",limit)}
 
 @app.post("/api/v1/analytics/event",dependencies=[Depends(require_api_key)])
 def analytics_event(payload:dict):
