@@ -68,3 +68,34 @@ def get_agent_memory(namespace: str, key: str):
     with connect() as conn:
         row=conn.execute("SELECT value FROM agent_memory WHERE namespace=? AND key=?", (namespace,key)).fetchone()
     return json.loads(row[0]) if row else None
+
+def save_business_record(table: str, payload: dict):
+    import json
+    allowed = {"products", "content_assets", "publishing_jobs", "experiments", "audit_logs"}
+    if table not in allowed:
+        raise ValueError("Unsupported business record table")
+    with connect() as conn:
+        conn.execute(f"""CREATE TABLE IF NOT EXISTS {table} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            payload TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
+        cur = conn.execute(f"INSERT INTO {table}(payload,created_at) VALUES(?,?)",
+                           (json.dumps(payload), datetime.now(timezone.utc).isoformat()))
+        conn.commit()
+        return {"id": cur.lastrowid, "table": table}
+
+def recent_business_records(table: str, limit: int = 50):
+    import json
+    allowed = {"products", "content_assets", "publishing_jobs", "experiments", "audit_logs"}
+    if table not in allowed:
+        raise ValueError("Unsupported business record table")
+    with connect() as conn:
+        conn.execute(f"""CREATE TABLE IF NOT EXISTS {table} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            payload TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
+        rows = conn.execute(f"SELECT id,payload,created_at FROM {table} ORDER BY id DESC LIMIT ?",
+                            (min(max(int(limit), 1), 500),)).fetchall()
+    return [{"id": r["id"], "payload": json.loads(r["payload"]), "created_at": r["created_at"]} for r in rows]
