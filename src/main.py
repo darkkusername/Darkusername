@@ -12,6 +12,7 @@ from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
 from .integrations import statuses, integration_health, fetch_metricool_analytics, shopify_summary, canva_me
 from .publishing import schedule_content
+from .ops import system_status
 import os, httpx, json
 from .db import (
     init_db, save_trends, save_run, recent_trends, recent_runs,
@@ -38,6 +39,10 @@ def health():
 @app.get("/ready")
 def ready():
     return {"status":"ready","service":"DU-cluster","mode":"standalone","storage":"sqlite","ai_provider_configured":ai.configured}
+
+@app.get("/api/v1/ops/status",dependencies=[Depends(require_api_key)])
+def ops_status():
+    return system_status()
 
 @app.get("/api/v1/agent/status")
 def agent_status():
