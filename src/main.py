@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Opportunity, UnitEconomics
 from .orchestrator import VentureOrchestrator
 from .security import require_api_key
@@ -9,16 +10,18 @@ from .memory_store import init_memory, put, get, list_namespace
 from .content_factory import ContentFactory
 from .product_factory import ProductFactory
 from .ai_gateway import AIGateway
-from .integrations import statuses
+from .integrations import statuses, integration_health, fetch_metricool_analytics, shopify_summary, canva_me
 from .publishing import schedule_content
 import os, httpx, json
 from .db import (
     init_db, save_trends, save_run, recent_trends, recent_runs,
     save_performance_event, recent_performance, performance_summary,
-    save_business_record, recent_business_records,
+    save_business_record, recent_business_records, save_opportunity, recent_opportunities, save_integration_sync, recent_integration_syncs,
 )
 
-app=FastAPI(title="DU-cluster",version="2.3.0",description="International English-first AI Business Operating System")
+app=FastAPI(title="DU-cluster",version="2.4.0",description="International English-first AI Business Operating System")
+cors_origins=[x.strip() for x in os.getenv("CORS_ORIGINS","*").split(",") if x.strip()]
+app.add_middleware(CORSMiddleware,allow_origins=cors_origins,allow_credentials=False,allow_methods=["*"],allow_headers=["*"])
 orchestrator=VentureOrchestrator()
 pipeline=BusinessPipeline()
 ai=AIGateway()
@@ -49,7 +52,9 @@ def agent_status():
 
 @app.post("/api/v1/opportunities/evaluate",dependencies=[Depends(require_api_key)])
 def evaluate(opportunity:Opportunity,economics:UnitEconomics):
-    return orchestrator.run(opportunity,economics)
+    result=orchestrator.run(opportunity,economics)
+    record=save_opportunity({"opportunity":opportunity.model_dump(),"economics":economics.model_dump(),"decision":result})
+    return {"record":record,"decision":result}
 
 @app.post("/api/v1/trends/analyze",dependencies=[Depends(require_api_key)])
 def analyze_trends(payload:dict):
@@ -171,13 +176,39 @@ def optimizer_run(payload:dict):
     record=save_business_record("experiments",{"task":task,"evidence":summary,"result":result})
     return {"optimizer":"Optimizer","status":result["status"],"task":task,"evidence":summary,"experiment_record":record,"result":result}
 
+@app.get("/api/v1/opportunities/recent",dependencies=[Depends(require_api_key)])
+def opportunities_recent(limit:int=50):
+    return {"items":recent_opportunities(limit)}
+
 @app.get("/api/v1/optimizer/experiments",dependencies=[Depends(require_api_key)])
 def optimizer_experiments(limit:int=50):
     return {"items":recent_business_records("experiments",limit)}
 
 @app.get("/api/v1/integrations/status",dependencies=[Depends(require_api_key)])
 def integration_status():
-    return {"integrations":[s.__dict__ for s in statuses()]}
+    return {"integrations":[s.__dict__ for s in statuses()],"health":integration_health()}
+
+@app.post("/api/v1/integrations/metricool/sync",dependencies=[Depends(require_api_key)])
+def metricool_sync(payload:dict):
+    result=fetch_metricool_analytics(str(payload.get("from","")),str(payload.get("to","")),payload.get("params") or {})
+    save_integration_sync("Metricool",result.get("status","unknown"),result)
+    return result
+
+@app.get("/api/v1/integrations/shopify/summary",dependencies=[Depends(require_api_key)])
+def shopify_integration_summary():
+    result=shopify_summary()
+    save_integration_sync("Shopify",result.get("status","unknown"),result)
+    return result
+
+@app.get("/api/v1/integrations/canva/me",dependencies=[Depends(require_api_key)])
+def canva_integration_me():
+    result=canva_me()
+    save_integration_sync("Canva",result.get("status","unknown"),result)
+    return result
+
+@app.get("/api/v1/integrations/syncs",dependencies=[Depends(require_api_key)])
+def integration_syncs(limit:int=50):
+    return {"items":recent_integration_syncs(limit)}
 
 @app.put("/api/v1/memory/{namespace}/{key}",dependencies=[Depends(require_api_key)])
 def memory_put(namespace:str,key:str,payload:dict):
