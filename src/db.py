@@ -71,7 +71,7 @@ def get_agent_memory(namespace: str, key: str):
 
 def save_business_record(table: str, payload: dict):
     import json
-    allowed = {"products", "content_assets", "publishing_jobs", "experiments", "audit_logs"}
+    allowed = {"products", "content_assets", "publishing_jobs", "experiments", "audit_logs", "opportunities", "integration_syncs"}
     if table not in allowed:
         raise ValueError("Unsupported business record table")
     with connect() as conn:
@@ -85,9 +85,26 @@ def save_business_record(table: str, payload: dict):
         conn.commit()
         return {"id": cur.lastrowid, "table": table}
 
+
+def save_opportunity(payload: dict):
+    return save_business_record("opportunities", payload)
+
+def recent_opportunities(limit: int = 50):
+    return recent_business_records("opportunities", limit)
+
+def save_integration_sync(name: str, status: str, payload: dict | None = None):
+    return save_business_record("integration_syncs", {
+        "integration": name,
+        "status": status,
+        "payload": payload or {},
+    })
+
+def recent_integration_syncs(limit: int = 50):
+    return recent_business_records("integration_syncs", limit)
+
 def recent_business_records(table: str, limit: int = 50):
     import json
-    allowed = {"products", "content_assets", "publishing_jobs", "experiments", "audit_logs"}
+    allowed = {"products", "content_assets", "publishing_jobs", "experiments", "audit_logs", "opportunities", "integration_syncs"}
     if table not in allowed:
         raise ValueError("Unsupported business record table")
     with connect() as conn:
