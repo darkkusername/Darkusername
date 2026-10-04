@@ -42,7 +42,7 @@ def schedule_content(payload:dict[str,Any])->dict[str,Any]:
     if mode=="execute":
         job["message"]="No external publication was performed: provider execution is not implemented yet."
     else:
-        job["message"]="Publishing job persisted as preview. No external post was published or scheduled."
+        job["message"]="Publishing job persisted as preview. No post was published or scheduled externally."
 
     record=save_business_record("publishing_jobs",job)
     job["record_id"]=record["id"]
