@@ -18,15 +18,16 @@ def schedule_content(payload:dict[str,Any])->dict[str,Any]:
     platform=str(payload.get("platform","")).strip().lower()
     content=str(payload.get("content","")).strip()
     scheduled_at=str(payload.get("scheduled_at","")).strip()
-    mode=str(payload.get("mode","preview")).strip().lower()
+    requested_mode=str(payload.get("mode","preview")).strip().lower()
+    mode="dry_run" if requested_mode in {"preview","dry_run"} else requested_mode
     if platform not in ALLOWED_PLATFORMS:
         return {"status":"invalid","error":"platform must be youtube, instagram, or tiktok"}
     if not content:
         return {"status":"invalid","error":"content is required"}
     if scheduled_at and not _parse_iso(scheduled_at):
         return {"status":"invalid","error":"scheduled_at must be ISO-8601"}
-    if mode not in {"preview","execute"}:
-        return {"status":"invalid","error":"mode must be preview or execute"}
+    if mode not in {"dry_run","execute"}:
+        return {"status":"invalid","error":"mode must be preview/dry_run or execute"}
 
     provider_configured=bool(os.getenv("METRICOOL_API_TOKEN","").strip())
     job={
@@ -36,10 +37,9 @@ def schedule_content(payload:dict[str,Any])->dict[str,Any]:
         "created_at":datetime.now(timezone.utc).isoformat(),
         "mode":mode,
         "provider_configured":provider_configured,
-        "status":"preview_only" if mode=="preview" else "provider_not_implemented",
+        "status":"preview_only" if mode=="dry_run" else "provider_not_implemented",
     }
     if mode=="execute":
-        job["status"]="provider_not_implemented"
         job["message"]="No external publication was performed: provider execution is not implemented yet."
     else:
         job["message"]="Publishing job persisted as preview. No external post was published or scheduled."
